@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+@theme {
+    --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Fraunces", Georgia, serif;
+
+    --color-paper: #f4f5f7;
+    --color-card: #ffffff;
+    --color-ink: #14161b;
+    --color-mute: #697080;
+    --color-line: #e2e5eb;
+    --color-brand: #3a4bff;
+    --color-brand-dark: #2b39d4;
+    --color-heart: #ef2d5e;
+}
+
+html,
+body,
+#root {
+    min-height: 100%;
+}
+
+body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Story-ring: the one memorable element of the UI */
+.ring-story {
+    background: linear-gradient(45deg, #ffb23e, #ff3d6e 48%, #b13bff);
+}
+
+@keyframes heart-pop {
+    0% {
+        transform: scale(1);
+    }
+
+    35% {
+        transform: scale(1.35);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.heart-pop {
+    animation: heart-pop 320ms ease-out;
+}
+
+@keyframes burst {
+    0% {
+        opacity: 0;
+        transform: scale(0.4);
+    }
+
+    25% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(1.3);
+    }
+}
+
+.burst {
+    animation: burst 700ms ease-out forwards;
+}
+
+@keyframes modal-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.985);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.modal-in {
+    animation: modal-in 160ms ease-out;
+}
+
+@keyframes shimmer {
+    to {
+        background-position: -200% 0;
+    }
+}
+
+.skeleton {
+    background: linear-gradient(90deg, #eceef2 25%, #f6f7f9 50%, #eceef2 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+}
+
+:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 1ms !important;
+        transition-duration: 1ms !important;
+    }
+}
