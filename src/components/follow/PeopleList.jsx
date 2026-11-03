@@ -1,39 +1,37 @@
-import { displayName } from "../../utils";
+import { useQuery } from "@tanstack/react-query";
+import { followApi, profileApi } from "../../api/services";
+import { displayName } from "../../lib/format";
 import Avatar from "../ui/Avatar";
-import { EmptyState, ErrorState, Skeleton } from "../ui/States";
+import FollowButton from "./FollowButton";
+import { Empty, Loader } from "../ui/Loader";
 
-/** Followers / Following dono ke liye same list. Items: {userName, email, image, socialAccount} */
-export default function PeopleList({ query, items, emptyTitle, emptyText }) {
-  if (query.isLoading) {
-    return (
-      <div className="space-y-3 p-4">
-        {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
-      </div>
-    );
+export default function PeopleList({ type }) {
+  const { data, isLoading } = useQuery({
+    queryKey: [type === "all" ? "people" : type],
+    queryFn: type === "all" ? profileApi.people : type === "followers" ? followApi.followers : followApi.following,
+  });
+
+  const people = type === "all" ? data || [] : (type === "followers" ? data?.followers : data?.following) || [];
+
+  if (isLoading) return <Loader />;
+  if (people.length === 0) {
+    if (type === "all") return <Empty title="No people yet" text="When others sign up, they show up here." />;
+    if (type === "followers") return <Empty title="No followers yet" text="When people follow you, they'll show up here." />;
+    return <Empty title="Not following anyone" text="Use the Follow button to follow someone." />;
   }
-  if (query.isError) return <ErrorState error={query.error} onRetry={query.refetch} />;
-  if (!items.length) return <EmptyState icon="users" title={emptyTitle} text={emptyText} />;
 
   return (
     <ul className="divide-y divide-line">
-      {items.map((u, i) => {
-        const name = displayName(u);
-        return (
-          <li key={u.email || i} className="flex items-center gap-3 px-4 py-3">
-            <Avatar src={u.image} name={name} size="md" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">{name}</p>
-              <p className="truncate text-xs text-mute">{u.email}</p>
-            </div>
-            {u.socialAccount === 1 && (
-              <span className="flex items-center gap-1 rounded-full bg-ink/5 px-2 py-1 text-xs font-medium text-mute">
-                <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
-                Private
-              </span>
-            )}
-          </li>
-        );
-      })}
+      {people.map((u) => (
+        <li key={u._id || u.email} className="flex items-center gap-3 px-4 py-3">
+          <Avatar src={u.image} name={displayName(u)} size="md" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">{displayName(u)}</p>
+            <p className="truncate text-xs text-mute">{u.email}</p>
+          </div>
+          {u._id && <FollowButton userId={u._id} />}
+        </li>
+      ))}
     </ul>
   );
 }

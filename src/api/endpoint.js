@@ -8,7 +8,7 @@
 export const ENDPOINTS = {
   // ---------- onboarding.js (public) ----------
   AUTH: {
-    SIGNUP: "/onboarding/signup", // POST  {firstName, lastName?, email, password(min 6), phone?, countryCode?, deviceType?}
+    // NOTE: is backend me /onboarding/signup route nahi hai. Signup = send-otp (otpType 1) + verify-otp (otpType 1, password)
     LOGIN: "/onboarding/login", // POST  {email, password, deviceType?}
     SEND_OTP: "/onboarding/send-otp", // POST  {otpType, email}
     VERIFY_OTP: "/onboarding/verify-otp", // POST  {otpType, email, code, password?, deviceType?}
@@ -23,6 +23,8 @@ export const ENDPOINTS = {
     SEND_OTP_TO_UPDATE: "/onboarding/send-otp-to-update", // POST {otpType: 4, email}
     VERIFY_OTP_TO_UPDATE: "/onboarding/verify-otp-to-update", // POST {otpType: 4, email, code}
     DELETE_ACCOUNT: "/onboarding", // DELETE
+    USERS: "/onboarding/users", // GET  all signup accounts except me
+    AVATAR: "/onboarding/avatar", // PUT multipart: import_posts(file)
   },
 
   // ---------- post.js ----------
@@ -58,6 +60,8 @@ export const ENDPOINTS = {
     ACCEPT_REJECT: "/follow/accept-reject", // POST {_id, followStatus: 1 accept | 2 reject}
     FOLLOWERS: "/follow/myFollowers", // GET
     FOLLOWING: "/follow/following", // GET
+    REQUESTS: "/follow/requests", // GET pending requests received by current user
+    STATUS: (id) => `/follow/status/${id}`, // GET current follow status
   },
 
   // ---------- address.js (backend pe auth nahi hai) ----------

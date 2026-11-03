@@ -1,32 +1,23 @@
-import { EmptyState } from "../ui/States";
+import { useDispatch } from "react-redux";
+import { openModal } from "../../store/uiSlice";
 
-/** items: [{_id, post}] — profile aur liked page dono use karte hain */
-export default function PostGrid({ items, onOpen, empty }) {
-  if (!items.length) return empty || <EmptyState title="Nothing here yet" />;
-  console.log(items, "............");
+// items: [{ _id, post }]  — click par post detail modal Redux se khulta hai
+export default function PostGrid({ items }) {
+  const dispatch = useDispatch();
+
   return (
-    <ul className="grid grid-cols-3 gap-1 md:gap-2">
-      {items.map(
-        (p) => (
-          console.log(p),
-          (
-            <li key={p._id}>
-              <button
-                onClick={() => onOpen(p)}
-                className="group relative block aspect-square w-full overflow-hidden bg-paper"
-                aria-label="Open post"
-              >
-                <img
-                  src={p.post}
-                  alt=""
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              </button>
-            </li>
-          )
-        ),
-      )}
+    <ul className="grid grid-cols-3 gap-1 md:gap-5">
+      {items.map((p) => (
+        <li key={p._id}>
+          <button
+            onClick={() => dispatch(openModal({ name: "postDetail", data: { postId: p._id } }))}
+            aria-label="Open post"
+            className="block aspect-square w-full overflow-hidden rounded-xl bg-[var(--soft)]"
+          >
+            <img src={p.post} alt="" loading="lazy" className="h-full w-full object-cover transition-opacity hover:opacity-85" />
+          </button>
+        </li>
+      ))}
     </ul>
   );
 }

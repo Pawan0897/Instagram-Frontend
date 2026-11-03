@@ -18,7 +18,6 @@ const asForm = (obj) => {
 
 /* ------------------------------- AUTH ------------------------------- */
 export const authApi = {
-  signup: (body) => http.post(E.AUTH.SIGNUP, { deviceType: ENUMS.DEVICE_TYPE.WEB, ...body }),
   login: (body) => http.post(E.AUTH.LOGIN, { deviceType: ENUMS.DEVICE_TYPE.WEB, ...body }),
   sendOtp: (body) => http.post(E.AUTH.SEND_OTP, body),
   verifyOtp: (body) =>
@@ -40,6 +39,8 @@ export const profileApi = {
       code: Number(code),
     }),
   deleteAccount: () => http.delete(E.PROFILE.DELETE_ACCOUNT),
+  people: () => data(http.get(E.PROFILE.USERS)).catch(() => []),
+  avatar: (file) => http.put(E.PROFILE.AVATAR, asForm({ import_posts: file })),
 };
 
 /* -------------------------------- POST ------------------------------ */
@@ -59,7 +60,7 @@ export const likeApi = {
   toggle: (postId) => http.post(E.LIKE.TOGGLE, { postId }),
   mine: () => data(http.get(E.LIKE.MY_LIKED_POSTS)),
   count: (postId) => data(http.get(E.LIKE.COUNT(postId))),
-  byMe: (postId) => data(http.get(E.LIKE.BY_ME(postId))),
+  byMe: (postId) => data(http.get(E.LIKE.BY_ME(postId))).catch(() => []),
   // likes na hone par backend error throw karta hai -> empty list treat karo
   users: (postId) => data(http.get(E.LIKE.USERS(postId))).catch(() => []),
 };
@@ -81,6 +82,8 @@ export const followApi = {
     data(http.get(E.FOLLOW.FOLLOWERS)).catch(() => ({ followers: [], followersCount: 0 })),
   following: () =>
     data(http.get(E.FOLLOW.FOLLOWING)).catch(() => ({ following: [], followingCount: 0 })),
+  requests: () => data(http.get(E.FOLLOW.REQUESTS)).catch(() => []),
+  status: (userId) => data(http.get(E.FOLLOW.STATUS(userId))),
 };
 
 /* ------------------------------ ADDRESS ----------------------------- */

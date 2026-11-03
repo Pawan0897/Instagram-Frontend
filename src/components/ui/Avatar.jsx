@@ -1,27 +1,24 @@
-import { initialOf } from "../../utils";
-
 const sizes = {
-  xs: "h-7 w-7 text-[11px]",
-  sm: "h-9 w-9 text-xs",
+  sm: "h-8 w-8 text-xs",
   md: "h-11 w-11 text-sm",
-  lg: "h-16 w-16 text-lg",
-  xl: "h-28 w-28 text-3xl md:h-36 md:w-36 md:text-4xl",
+  lg: "h-14 w-14 text-base",
+  xl: "h-24 w-24 text-3xl md:h-36 md:w-36 md:text-5xl",
 };
 
 export default function Avatar({ src, name = "", size = "md", ring = false }) {
-  const inner = src ? (
+  const face = src ? (
     <img src={src} alt="" className="h-full w-full rounded-full object-cover" />
   ) : (
-    <span className="grid h-full w-full place-items-center rounded-full bg-ink font-semibold text-white">
-      {initialOf(name)}
+    <span className="grid h-full w-full place-items-center rounded-full bg-[#c7c7c7] font-semibold text-white">
+      {(name[0] || "?").toUpperCase()}
     </span>
   );
 
-  if (!ring) return <div className={`${sizes[size]} shrink-0`}>{inner}</div>;
+  if (!ring) return <div className={`${sizes[size]} shrink-0`}>{face}</div>;
 
   return (
-    <div className={`${sizes[size]} ring-story shrink-0 rounded-full p-[2.5px]`}>
-      <div className="h-full w-full rounded-full bg-card p-[2px]">{inner}</div>
+    <div className={`${sizes[size]} story-ring shrink-0 rounded-full p-[2px]`}>
+      <div className="h-full w-full rounded-full bg-white p-[2px]">{face}</div>
     </div>
   );
 }

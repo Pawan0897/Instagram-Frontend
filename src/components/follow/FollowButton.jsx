@@ -1,40 +1,33 @@
-import { useState } from "react";
-import { ENUMS } from "../../api/endpoint";
-import { useFollowing, useToggleFollow } from "../../hooks/queries";
-import Button from "../ui/Button";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { followApi } from "../../api/services";
 
-/**
- * Backend ek hi route deta hai (POST /follow) jo toggle karta hai:
- *   - response data = null  -> unfollowed / request cancelled
- *   - followStatus 1        -> following
- *   - followStatus 0        -> request sent (private account)
- * Initial state ke liye following list me userName match karte hain (list me _id nahi aati).
- */
-export default function FollowButton({ userId, userName, size = "sm" }) {
-  const { data } = useFollowing();
-  const [override, setOverride] = useState(null);
-
-  const guessed =
-    userName && data?.following?.some((u) => u.userName === userName) ? "following" : "none";
-  const state = override ?? guessed;
-
-  const toggle = useToggleFollow({
+export default function FollowButton({ userId }) {
+  const queryClient = useQueryClient();
+  const { data: relation, isLoading } = useQuery({
+    queryKey: ["followStatus", userId],
+    queryFn: () => followApi.status(userId),
+    enabled: Boolean(userId),
+  });
+  const toggle = useMutation({
+    mutationFn: () => followApi.toggle(userId),
     onSuccess: (res) => {
-      if (!res.data) return setOverride("none");
-      setOverride(res.data.followStatus === ENUMS.FOLLOW_STATUS.ACCEPT ? "following" : "requested");
+      queryClient.setQueryData(["followStatus", userId], res.data || null);
+      queryClient.invalidateQueries({ queryKey: ["following"] });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["followRequests"] });
     },
   });
-
-  const label = { none: "Follow", following: "Following", requested: "Requested" }[state];
+  const state = relation?.followStatus;
+  const label = state === 1 ? "Following" : state === 0 ? "Requested" : "Follow";
+  const filled = state !== 1 && state !== 0;
 
   return (
-    <Button
-      size={size}
-      variant={state === "none" ? "primary" : "secondary"}
-      loading={toggle.isPending}
-      onClick={() => toggle.mutate(userId)}
+    <button
+      className={filled ? "chip chip-fill" : "chip"}
+      disabled={toggle.isPending || isLoading}
+      onClick={() => toggle.mutate()}
     >
       {label}
-    </Button>
+    </button>
   );
 }

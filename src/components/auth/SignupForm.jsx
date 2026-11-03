@@ -1,44 +1,90 @@
 import { useState } from "react";
-import { useSignup } from "../../hooks/queries";
-import { useAuth } from "../../context/AuthContext";
-import { Input, FormError } from "../ui/Field";
+import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { useMutation } from "@tanstack/react-query";
+import { Form, Formik } from "formik";
+import { ENUMS } from "../../api/endpoint";
+import { authApi, profileApi } from "../../api/services";
+import { loginSuccess, setUser } from "../../store/authSlice";
+import { otpLoginSchema, signupSchema } from "../../lib/schemas";
+import { removeEmpty } from "../../lib/format";
+import { notify } from "../../lib/alert";
 import Button from "../ui/Button";
+import FormInput from "../ui/FormInput";
 
+/**
+ * Is backend me POST /onboarding/signup nahi hai. Signup OTP se hota hai:
+ *   Step 1: POST /onboarding/send-otp    { otpType: 1, email }
+ *   Step 2: POST /onboarding/verify-otp  { otpType: 1, email, code, password }  -> user ban jata hai + token
+ *   Step 3: PUT  /onboarding/user        { firstName, lastName }                -> naam save (verify-otp naam nahi leta)
+ */
 export default function SignupForm() {
-  const { signIn } = useAuth();
-  const [form, setForm] = useState({
-    firstName: "", lastName: "", email: "", password: "", countryCode: "+91", phone: "",
-  });
-  const signup = useSignup({ onSuccess: (res) => signIn(res.data) });
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const dispatch = useDispatch();
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState(null); // step 1 ki values
 
-  const submit = (e) => {
-    e.preventDefault();
-    const { phone, countryCode, lastName, ...rest } = form;
-    signup.mutate({
-      ...rest,
-      email: rest.email.trim().toLowerCase(),
-      ...(lastName && { lastName }),
-      ...(phone && { phone, countryCode }), // phone ke saath countryCode bhi bhejna hai
-    });
-  };
+  const sendOtp = useMutation({
+    mutationFn: authApi.sendOtp,
+    onSuccess: () => setStep(2),
+  });
+
+  const verify = useMutation({
+    mutationFn: async (code) => {
+      const res = await authApi.verifyOtp({
+        otpType: ENUMS.OTP_TYPE.SIGNUP,
+        email: form.email,
+        password: form.password,
+        code,
+      });
+      dispatch(loginSuccess(res.data)); // token ab localStorage me hai
+      const names = removeEmpty({ firstName: form.firstName, lastName: form.lastName });
+      const updated = await profileApi.update(names);
+      dispatch(setUser(updated.data));
+      notify.success("Welcome to Frame");
+    },
+  });
 
   return (
-    <form className="space-y-4" onSubmit={submit}>
-      <div className="grid grid-cols-2 gap-3">
-        <Input label="First name" required value={form.firstName} onChange={set("firstName")} />
-        <Input label="Last name" value={form.lastName} onChange={set("lastName")} />
-      </div>
-      <Input label="Email" type="email" autoComplete="email" required value={form.email} onChange={set("email")} />
-      <Input label="Password" type="password" minLength={6} autoComplete="new-password" required value={form.password} onChange={set("password")} hint="At least 6 characters." />
-      <div className="grid grid-cols-[88px_1fr] gap-3">
-        <Input label="Code" value={form.countryCode} onChange={set("countryCode")} />
-        <Input label="Phone (optional)" inputMode="numeric" value={form.phone} onChange={set("phone")} />
-      </div>
-      <FormError error={signup.error} />
-      <Button type="submit" full size="lg" loading={signup.isPending}>
-        Create account
-      </Button>
-    </form>
+    <>
+      <p className="mb-5 text-center text-[15px] font-semibold text-mute">
+        {step === 1 ? "Sign up to see photos from your friends." : `Enter the code sent to ${form.email}`}
+      </p>
+
+      {step === 1 ? (
+        <Formik
+          initialValues={{ firstName: "", lastName: "", email: "", password: "" }}
+          validationSchema={signupSchema}
+          onSubmit={(values) => {
+            const clean = { ...values, email: values.email.trim().toLowerCase() };
+            setForm(clean);
+            sendOtp.mutate({ otpType: ENUMS.OTP_TYPE.SIGNUP, email: clean.email });
+          }}
+        >
+          <Form className="space-y-3">
+            <FormInput name="firstName" placeholder="First name" />
+            <FormInput name="lastName" placeholder="Last name (optional)" />
+            <FormInput name="email" type="email" placeholder="Email" autoComplete="email" />
+            <FormInput name="password" type="password" placeholder="Password (min 6)" autoComplete="new-password" />
+            <Button type="submit" full loading={sendOtp.isPending}>Send code</Button>
+          </Form>
+        </Formik>
+      ) : (
+        <Formik
+          initialValues={{ code: "" }}
+          validationSchema={otpLoginSchema}
+          onSubmit={(v) => verify.mutate(v.code)}
+        >
+          <Form className="space-y-3">
+            <FormInput name="code" inputMode="numeric" placeholder="Code" />
+            <Button type="submit" full loading={verify.isPending}>Create account</Button>
+            <Button type="button" light full onClick={() => setStep(1)}>Back</Button>
+          </Form>
+        </Formik>
+      )}
+
+      <p className="mt-6 border-t border-line pt-5 text-center text-sm">
+        Have an account? <Link to="/login" className="font-semibold text-brand">Log in</Link>
+      </p>
+    </>
   );
 }

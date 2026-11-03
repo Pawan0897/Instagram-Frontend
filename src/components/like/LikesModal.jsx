@@ -1,37 +1,35 @@
-import { useLikers } from "../../hooks/queries";
-import { displayName } from "../../utils";
+import { useQuery } from "@tanstack/react-query";
+import { likeApi } from "../../api/services";
+import { displayName } from "../../lib/format";
 import Avatar from "../ui/Avatar";
+import { Empty, Loader } from "../ui/Loader";
 import Modal from "../ui/Modal";
-import { EmptyState, Skeleton } from "../ui/States";
 
-export default function LikesModal({ postId, open, onClose }) {
-  const { data = [], isLoading } = useLikers(postId, open);
+export default function LikesModal({ postId }) {
+  // GET /like/likeUserListing/:id -> [{ userDetails: [{ userName, email }] }]
+  const { data = [], isLoading } = useQuery({
+    queryKey: ["likers", postId],
+    queryFn: () => likeApi.users(postId),
+  });
 
   return (
-    <Modal open={open} onClose={onClose} title="Likes">
-      <div className="min-h-40 p-2">
-        {isLoading && (
-          <div className="space-y-3 p-3">
-            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
-          </div>
-        )}
-        {!isLoading && data.length === 0 && (
-          <EmptyState icon="heart" title="No likes yet" text="Be the first to like this post." />
-        )}
+    <Modal title="Likes">
+      {isLoading && <Loader />}
+      {!isLoading && data.length === 0 && <Empty title="No likes yet" />}
+      <ul className="p-2">
         {data.map((row) => {
           const u = row.userDetails?.[0];
-          const name = displayName(u);
           return (
-            <div key={row._id} className="flex items-center gap-3 rounded-lg p-3 hover:bg-paper">
-              <Avatar name={name} size="sm" />
+            <li key={row._id} className="flex items-center gap-3 rounded-lg p-2 hover:bg-paper">
+              <Avatar name={displayName(u)} size="sm" />
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{name}</p>
-                {u?.email && <p className="truncate text-xs text-mute">{u.email}</p>}
+                <p className="truncate text-sm font-semibold">{displayName(u)}</p>
+                <p className="truncate text-xs text-mute">{u?.email}</p>
               </div>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </Modal>
   );
 }

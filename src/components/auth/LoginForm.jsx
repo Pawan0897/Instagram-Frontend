@@ -1,38 +1,43 @@
-import { useState } from "react";
-import { useLogin } from "../../hooks/queries";
-import { useAuth } from "../../context/AuthContext";
-import { Input, FormError } from "../ui/Field";
+import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { useMutation } from "@tanstack/react-query";
+import { Form, Formik } from "formik";
+import { authApi } from "../../api/services";
+import { loginSuccess } from "../../store/authSlice";
+import { loginSchema } from "../../lib/schemas";
 import Button from "../ui/Button";
+import FormInput from "../ui/FormInput";
 
-export default function LoginForm({ onForgot, onOtp }) {
-  const { signIn } = useAuth();
-  const [form, setForm] = useState({ email: "", password: "" });
-  const login = useLogin({ success: false, onSuccess: (res) => signIn(res.data) });
+export default function LoginForm() {
+  const dispatch = useDispatch();
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  // POST /onboarding/login
+  const login = useMutation({
+    mutationFn: authApi.login,
+    onSuccess: (res) => dispatch(loginSuccess(res.data)),
+  });
 
   return (
-    <form
-      className="space-y-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        login.mutate({ email: form.email.trim().toLowerCase(), password: form.password });
-      }}
-    >
-      <Input label="Email" type="email" autoComplete="email" required value={form.email} onChange={set("email")} placeholder="you@example.com" />
-      <Input label="Password" type="password" autoComplete="current-password" required value={form.password} onChange={set("password")} />
-      <FormError error={login.error} />
-      <Button type="submit" full size="lg" loading={login.isPending}>
-        Log in
-      </Button>
-      <div className="flex items-center justify-between text-sm">
-        <button type="button" onClick={onOtp} className="font-medium text-brand hover:underline">
-          Log in with a code
-        </button>
-        <button type="button" onClick={onForgot} className="font-medium text-mute hover:text-ink hover:underline">
-          Forgot password?
-        </button>
+    <>
+      <Formik
+        initialValues={{ email: "", password: "" }}
+        validationSchema={loginSchema}
+        onSubmit={(values) => login.mutate({ ...values, email: values.email.trim().toLowerCase() })}
+      >
+        <Form className="space-y-3">
+          <FormInput name="email" type="email" placeholder="Email" autoComplete="email" />
+          <FormInput name="password" type="password" placeholder="Password" autoComplete="current-password" />
+          <Button type="submit" full loading={login.isPending}>Log in</Button>
+        </Form>
+      </Formik>
+
+      <div className="mt-5 space-y-2 text-center text-sm">
+        <Link to="/login-otp" className="block font-medium text-[var(--color-brand)] hover:underline">Log in with a code</Link>
+        <Link to="/forgot-password" className="block text-[var(--muted)] hover:underline">Forgot password?</Link>
       </div>
-    </form>
+      <p className="mt-6 border-t border-[var(--line)] pt-5 text-center text-sm">
+        Don't have an account? <Link to="/signup" className="font-semibold text-[var(--color-brand)]">Sign up</Link>
+      </p>
+    </>
   );
 }
